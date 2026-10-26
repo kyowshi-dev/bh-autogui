@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;"
+    />
+    <title>Bit Heroes Surface Selector</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand" aria-label="Bit Heroes Surface Selector">
+        <div class="brand-mark" aria-hidden="true">BH</div>
+        <div class="brand-copy">
+          <strong>Bit Heroes</strong>
+          <span>Surface selector</span>
+        </div>
+      </div>
+
+      <div class="page-context">
+        <span class="eyebrow">KONGREGATE / 266462</span>
+        <span class="page-url">juppiomenz / bit-heroes</span>
+      </div>
+
+      <div class="toolbar-actions">
+        <button
+          id="select-button"
+          class="button button-select"
+          type="button"
+          aria-pressed="false"
+        >
+          <span class="button-symbol" aria-hidden="true">+</span>
+          Select surface
+        </button>
+        <button
+          id="confirm-button"
+          class="button button-confirm"
+          type="button"
+          disabled
+        >
+          <span class="button-symbol" aria-hidden="true">&#10003;</span>
+          Confirm
+        </button>
+        <button
+          id="reset-button"
+          class="button button-reset"
+          type="button"
+          aria-label="Clear selection"
+          title="Clear selection"
+        >
+          <span aria-hidden="true">&#8634;</span>
+        </button>
+      </div>
+
+      <div class="automation-row">
+        <label class="mode-control" for="activity-mode">
+          <span>Activity</span>
+          <select id="activity-mode">
+            <option value="raid">Raid</option>
+            <option value="pvp">PvP</option>
+            <option value="expedition">Expedition</option>
+            <option value="trial">Trial</option>
+          </select>
+        </label>
+        <span class="automation-hint"
+          >Enter the activity manually; automation only handles recognized
+          results.</span
+        >
+        <div class="automation-actions">
+          <button
+            id="automation-start"
+            class="button button-automation"
+            type="button"
+            disabled
+          >
+            Monitor &amp; rerun
+          </button>
+          <button
+            id="automation-stop"
+            class="button button-stop"
+            type="button"
+            disabled
+            aria-label="Stop automation"
+          >
+            Stop
+          </button>
+        </div>
+      </div>
+
+      <div class="status-row" aria-live="polite">
+        <span
+          id="status-indicator"
+          class="status-indicator"
+          data-state="loading"
+        ></span>
+        <span id="status-label">Opening Kongregate…</span>
+        <span class="status-divider"></span>
+        <span id="status-detail">Waiting for game surface</span>
+        <span
+          id="automation-detail"
+          class="automation-detail"
+          aria-live="polite"
+        ></span>
+      </div>
+    </header>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
