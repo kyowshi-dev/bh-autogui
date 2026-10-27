@@ -12,17 +12,39 @@ const selectButton =
   document.querySelector<HTMLButtonElement>("#select-button")!;
 const confirmButton =
   document.querySelector<HTMLButtonElement>("#confirm-button")!;
-const resetButton = document.querySelector<HTMLButtonElement>("#reset-button")!;
+const toolbarToggle =
+  document.querySelector<HTMLButtonElement>("#toolbar-toggle")!;
 const statusIndicator =
   document.querySelector<HTMLElement>("#status-indicator")!;
 const statusLabel = document.querySelector<HTMLElement>("#status-label")!;
 const statusDetail = document.querySelector<HTMLElement>("#status-detail")!;
+const ocrInterval = document.querySelector<HTMLInputElement>("#ocr-interval")!;
+const ocrKeywords = document.querySelector<HTMLInputElement>("#ocr-keywords")!;
+const ocrStart = document.querySelector<HTMLButtonElement>("#ocr-start")!;
+const ocrStop = document.querySelector<HTMLButtonElement>("#ocr-stop")!;
+const ocrState = document.querySelector<HTMLElement>("#ocr-state")!;
+const ocrResult = document.querySelector<HTMLOutputElement>("#ocr-result")!;
 
 let gameAvailable = false;
 let frameIdentified = false;
 let selecting = false;
 let previewing = false;
 let selected = false;
+let ocrRunning = false;
+let toolbarCollapsed = false;
+
+toolbarToggle.addEventListener("click", () => {
+  toolbarCollapsed = !toolbarCollapsed;
+  document.body.dataset.collapsed = String(toolbarCollapsed);
+  toolbarToggle.setAttribute("aria-expanded", String(!toolbarCollapsed));
+  const label = toolbarCollapsed ? "Show header" : "Hide header";
+  toolbarToggle.setAttribute("aria-label", label);
+  toolbarToggle.title = label;
+  toolbarToggle.querySelector("span")!.textContent = toolbarCollapsed
+    ? "⌄"
+    : "⌃";
+  window.selector.setToolbarCollapsed(toolbarCollapsed);
+});
 
 function setStatus(state: string, label: string, detail: string): void {
   statusIndicator.dataset.state = state;
@@ -34,6 +56,8 @@ function render(): void {
   selectButton.setAttribute("aria-pressed", String(selecting));
   selectButton.textContent = selecting ? "Cancel selection" : "Select surface";
   confirmButton.disabled = !(selecting && previewing);
+  ocrStart.disabled = !selected || ocrRunning;
+  ocrStop.disabled = !ocrRunning;
   if (selected)
     setStatus(
       "ready",
@@ -67,6 +91,19 @@ function render(): void {
   else setStatus("ready", "Bit Heroes frame verified", "Selection is idle");
 }
 
+ocrStart.addEventListener("click", () => {
+  const intervalMs = Number(ocrInterval.value);
+  if (!Number.isFinite(intervalMs)) return;
+  const keywords = ocrKeywords.value
+    .split(",")
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+  window.selector.startOcr({ intervalMs, keywords });
+  ocrState.textContent = "Starting";
+});
+
+ocrStop.addEventListener("click", () => window.selector.stopOcr());
+
 selectButton.addEventListener("click", () => {
   if (!gameAvailable) return;
   selecting = !selecting;
@@ -77,15 +114,6 @@ selectButton.addEventListener("click", () => {
 
 confirmButton.addEventListener("click", () => {
   if (selecting && previewing) window.selector.confirmSelection();
-});
-
-resetButton.addEventListener("click", () => {
-  window.selector.resetSelection();
-  selected = false;
-  selecting = false;
-  previewing = false;
-  window.selector.setSelectionMode(false);
-  render();
 });
 
 window.selector.onCandidateState((payload) => {
@@ -133,6 +161,26 @@ window.selector.onPageStatus((payload) => {
       "Page could not be loaded",
       "Check your connection and reload the app",
     );
+});
+
+window.selector.onOcrState((payload) => {
+  const state = payload as { running?: boolean; status?: string };
+  ocrRunning = Boolean(state?.running);
+  ocrState.textContent = state?.status ?? (ocrRunning ? "Scanning" : "Stopped");
+  render();
+});
+
+window.selector.onOcrResult((payload) => {
+  const result = payload as {
+    text?: string;
+    confidence?: number;
+    matches?: string[];
+  };
+  const text = result?.text?.replace(/\s+/g, " ").trim() || "No text detected";
+  const matches = result?.matches?.length
+    ? ` | Matches: ${result.matches.join(", ")}`
+    : "";
+  ocrResult.textContent = `${text} | ${result?.confidence ?? 0}% confidence${matches}`;
 });
 
 render();

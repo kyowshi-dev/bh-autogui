@@ -46,16 +46,19 @@
           Confirm
         </button>
         <button
-          id="reset-button"
-          class="button button-reset"
+          id="toolbar-toggle"
+          class="button button-reset button-toggle"
           type="button"
-          aria-label="Clear selection"
-          title="Clear selection"
+          aria-label="Hide header"
+          aria-expanded="true"
+          aria-controls="toolbar-content"
+          title="Hide header"
         >
-          <span aria-hidden="true">&#8634;</span>
+          <span aria-hidden="true">&#8963;</span>
         </button>
       </div>
 
+      <div id="toolbar-content" class="toolbar-content">
       <div class="status-row" aria-live="polite">
         <span
           id="status-indicator"
@@ -65,6 +68,29 @@
         <span id="status-label">Opening Kongregate…</span>
         <span class="status-divider"></span>
         <span id="status-detail">Waiting for game surface</span>
+      </div>
+      <section class="ocr-controls" aria-label="OCR monitor">
+        <div class="ocr-heading">
+          <strong>OCR monitor</strong>
+          <span id="ocr-state">Stopped</span>
+        </div>
+        <label class="ocr-field interval-field">
+          <span>Interval</span>
+          <span class="input-with-unit">
+            <input id="ocr-interval" type="number" min="1000" max="10000" step="500" value="2000" />
+            <span>ms</span>
+          </span>
+        </label>
+        <label class="ocr-field keyword-field">
+          <span>Watch for</span>
+          <input id="ocr-keywords" type="text" placeholder="cleared, defeat, rerun" />
+        </label>
+        <div class="ocr-actions">
+          <button id="ocr-start" class="button button-confirm" type="button" disabled>Start OCR</button>
+          <button id="ocr-stop" class="button button-reset" type="button" aria-label="Stop OCR" title="Stop OCR" disabled>&#9632;</button>
+        </div>
+        <output id="ocr-result" class="ocr-result" aria-live="polite">Select the verified game surface to enable OCR.</output>
+      </section>
       </div>
     </header>
     <script type="module" src="./app.js"></script>
