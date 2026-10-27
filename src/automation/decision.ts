@@ -1,5 +1,3 @@
-export type ActivityMode = "raid" | "pvp" | "expedition" | "trial";
-
 export interface OcrWord {
   text: string;
   confidence: number;
@@ -13,9 +11,9 @@ export type AutomationDecision =
   | { action: "click"; x: number; y: number; label: string }
   | {
       action: "stop";
-      reason: "defeat" | "energy" | "purchase" | "ambiguous" | "unknown";
+      reason: "defeat" | "resources" | "purchase" | "ambiguous" | "unknown";
     }
-  | { action: "wait"; reason: "battle" };
+  | { action: "wait"; reason: "battle" | "cleared" };
 
 const normalize = (value: string): string =>
   value
@@ -45,48 +43,71 @@ function uniqueLabel(
   return matches[0] ?? null;
 }
 
+export function hasGreenRerunButton(
+  words: OcrWord[],
+  bitmap: Uint8Array,
+  imageWidth: number,
+  imageHeight: number,
+): boolean {
+  const rerun = uniqueLabel(words, ["rerun", "re run", "retry"], 45);
+  if (!rerun || rerun === "ambiguous") return false;
+
+  const left = Math.max(0, Math.floor(rerun.x - rerun.width * 1.2));
+  const right = Math.min(imageWidth, Math.ceil(rerun.x + rerun.width * 2.2));
+  const top = Math.max(0, Math.floor(rerun.y - rerun.height * 1.1));
+  const bottom = Math.min(imageHeight, Math.ceil(rerun.y + rerun.height * 2.1));
+  let sampled = 0;
+  let green = 0;
+
+  for (let y = top; y < bottom; y += 3) {
+    for (let x = left; x < right; x += 3) {
+      const offset = (y * imageWidth + x) * 4;
+      const blue = bitmap[offset] ?? 0;
+      const greenChannel = bitmap[offset + 1] ?? 0;
+      const red = bitmap[offset + 2] ?? 0;
+      const alpha = bitmap[offset + 3] ?? 0;
+      if (alpha < 200) continue;
+      sampled += 1;
+      if (
+        greenChannel >= 90 &&
+        greenChannel > red * 1.25 &&
+        greenChannel > blue * 1.15
+      ) {
+        green += 1;
+      }
+    }
+  }
+
+  return sampled > 0 && green / sampled >= 0.12;
+}
+
 export function decideAutomationAction(
-  mode: ActivityMode,
   words: OcrWord[],
   scaleX: number,
   scaleY: number,
+  rerunIsGreen = false,
+  rerunPending = false,
 ): AutomationDecision {
   const text = wordsText(words);
-  if (/\b(defeat|defeated|you lose|battle failed)\b/.test(text))
+  if (/\b(defeat|defeated|death|died|dead|you lose|battle failed)\b/.test(text))
     return { action: "stop", reason: "defeat" };
   if (
-    /\bnot enough\b/.test(text) ||
-    /\benergy\s+(depleted|empty|exhausted)\b/.test(text)
+    /\b(not enough|insufficient)\b/.test(text) ||
+    /\b(energy|shards?|seals?|xeals?|badges?|tokens?)\s+(depleted|empty|exhausted)\b/.test(
+      text,
+    )
   ) {
-    return { action: "stop", reason: "energy" };
+    return { action: "stop", reason: "resources" };
   }
   if (/\b(purchase|buy|premium|spend|kreds|gems)\b/.test(text)) {
     return { action: "stop", reason: "purchase" };
   }
 
-  const close = uniqueLabel(words, ["close", "dismiss", "x"], 82);
-  const chat = words.find(
-    (word) =>
-      word.confidence >= 55 && /\b(chat|message)\b/.test(normalize(word.text)),
-  );
-  if (close === "ambiguous") return { action: "stop", reason: "ambiguous" };
-  if (close && chat && Math.hypot(close.x - chat.x, close.y - chat.y) < 420) {
-    return {
-      action: "click",
-      x: Math.round((close.x + close.width / 2) * scaleX),
-      y: Math.round((close.y + close.height / 2) * scaleY),
-      label: "chat-close",
-    };
-  }
-
-  const rerun = uniqueLabel(words, ["rerun", "re run", "retry"], 88);
+  const cleared = /\bcleared\b/.test(text);
+  const rerun = uniqueLabel(words, ["rerun", "re run", "retry"], 45);
+  if (cleared && rerunPending) return { action: "wait", reason: "cleared" };
   if (rerun === "ambiguous") return { action: "stop", reason: "ambiguous" };
-  const modeLabel = mode === "pvp" ? "pvp" : mode;
-  const modeVisible =
-    text.includes(modeLabel) ||
-    (mode === "trial" && text.includes("trials")) ||
-    (mode === "expedition" && text.includes("expeditions"));
-  if (rerun && modeVisible) {
+  if (rerun && rerunIsGreen) {
     return {
       action: "click",
       x: Math.round((rerun.x + rerun.width / 2) * scaleX),
@@ -94,6 +115,8 @@ export function decideAutomationAction(
       label: "rerun",
     };
   }
+  if (cleared) return { action: "wait", reason: "cleared" };
+  if (rerun) return { action: "wait", reason: "cleared" };
 
   if (/\b(battle|combat|auto)\b/.test(text))
     return { action: "wait", reason: "battle" };

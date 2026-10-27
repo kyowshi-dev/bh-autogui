@@ -56,41 +56,6 @@
         </button>
       </div>
 
-      <div class="automation-row">
-        <label class="mode-control" for="activity-mode">
-          <span>Activity</span>
-          <select id="activity-mode">
-            <option value="raid">Raid</option>
-            <option value="pvp">PvP</option>
-            <option value="expedition">Expedition</option>
-            <option value="trial">Trial</option>
-          </select>
-        </label>
-        <span class="automation-hint"
-          >Enter the activity manually; automation only handles recognized
-          results.</span
-        >
-        <div class="automation-actions">
-          <button
-            id="automation-start"
-            class="button button-automation"
-            type="button"
-            disabled
-          >
-            Monitor &amp; rerun
-          </button>
-          <button
-            id="automation-stop"
-            class="button button-stop"
-            type="button"
-            disabled
-            aria-label="Stop automation"
-          >
-            Stop
-          </button>
-        </div>
-      </div>
-
       <div class="status-row" aria-live="polite">
         <span
           id="status-indicator"
@@ -100,11 +65,6 @@
         <span id="status-label">Opening Kongregate…</span>
         <span class="status-divider"></span>
         <span id="status-detail">Waiting for game surface</span>
-        <span
-          id="automation-detail"
-          class="automation-detail"
-          aria-live="polite"
-        ></span>
       </div>
     </header>
     <script type="module" src="./app.js"></script>
